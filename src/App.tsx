@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SocialPlatform, AuthenticatedAccount, PostContent, PlatformValidation } from './types';
 import PlatformSelector from './components/PlatformSelector';
 import ContentEditor from './components/ContentEditor';
 import ValidationResults from './components/ValidationResults';
 import { validateContentForPlatform } from './utils/contentValidator';
+import { api } from './services/api';
 import './App.css';
 
 function App() {
@@ -15,21 +16,40 @@ function App() {
     videos: [],
   });
   const [validations, setValidations] = useState<PlatformValidation[]>([]);
+  const [isPosting, setIsPosting] = useState(false);
+  const [postResults, setPostResults] = useState<Array<{ success: boolean; platform: string; error?: string; postId?: string; url?: string }>>([]);
+
+  // Load authenticated accounts on mount
+  useEffect(() => {
+    loadAccounts();
+    
+    // Check for OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    const authStatus = params.get('auth');
+    const platform = params.get('platform');
+    
+    if (authStatus === 'success' && platform) {
+      alert(`Successfully connected to ${platform}!`);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      loadAccounts();
+    } else if (params.get('error')) {
+      alert(`Authentication failed: ${params.get('error')}`);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const loadAccounts = async () => {
+    try {
+      const accounts = await api.getAccounts();
+      setAuthenticatedAccounts(accounts);
+    } catch (error) {
+      console.error('Failed to load accounts:', error);
+    }
+  };
 
   const handleAuthenticate = (platform: SocialPlatform) => {
-    // TODO: Implement actual OAuth flow
-    // For now, simulate authentication
-    const newAccount: AuthenticatedAccount = {
-      platform,
-      username: `user_${platform}`,
-      isAuthenticated: true,
-      accessToken: 'mock_token',
-    };
-
-    setAuthenticatedAccounts((prev) => {
-      const filtered = prev.filter((acc) => acc.platform !== platform);
-      return [...filtered, newAccount];
-    });
+    api.authenticate(platform);
   };
 
   const handlePlatformToggle = (platform: SocialPlatform) => {
@@ -73,8 +93,30 @@ function App() {
       return;
     }
 
-    // TODO: Implement actual posting logic
-    alert(`Posting to: ${selectedPlatforms.join(', ')}\n\nThis will be implemented with actual API calls.`);
+    setIsPosting(true);
+    setPostResults([]);
+
+    try {
+      const results = await api.postToPlatforms(selectedPlatforms, content);
+      setPostResults(results);
+      
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+      
+      if (failCount === 0) {
+        alert(`✅ Successfully posted to ${successCount} platform(s)!`);
+        // Reset form
+        setContent({ text: '', images: [], videos: [] });
+        setSelectedPlatforms([]);
+        setValidations([]);
+      } else {
+        alert(`⚠️ Posted to ${successCount} platform(s), ${failCount} failed. Check results below.`);
+      }
+    } catch (error: any) {
+      alert(`Error posting: ${error.message}`);
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   return (
@@ -112,9 +154,39 @@ function App() {
 
           {validations.length > 0 && validations.every((v) => v.isValid) && (
             <section className="post-section">
-              <button className="btn-post" onClick={handlePost}>
-                ✈️ Post to Selected Platforms
+              <button 
+                className="btn-post" 
+                onClick={handlePost}
+                disabled={isPosting}
+              >
+                {isPosting ? '⏳ Posting...' : '✈️ Post to Selected Platforms'}
               </button>
+            </section>
+          )}
+
+          {postResults.length > 0 && (
+            <section className="results-section">
+              <h3>Post Results</h3>
+              {postResults.map((result, index) => (
+                <div
+                  key={index}
+                  className={`result-card ${result.success ? 'success' : 'error'}`}
+                >
+                  <strong>{result.platform}:</strong>{' '}
+                  {result.success ? (
+                    <span>
+                      ✅ Posted successfully
+                      {result.url && (
+                        <a href={result.url} target="_blank" rel="noopener noreferrer">
+                          {' '}View Post
+                        </a>
+                      )}
+                    </span>
+                  ) : (
+                    <span>❌ {result.error}</span>
+                  )}
+                </div>
+              ))}
             </section>
           )}
         </div>

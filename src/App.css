@@ -370,11 +370,58 @@
   font-weight: 600;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  cursor: pointer;
 }
 
-.btn-post:hover {
+.btn-post:hover:not(:disabled) {
   box-shadow: 0 6px 24px rgba(102, 126, 234, 0.6);
   transform: translateY(-2px);
+}
+
+.btn-post:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Results Section */
+.results-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.results-section h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.result-card {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.result-card.success {
+  background: #f1f8f4;
+  border-left-color: #4caf50;
+}
+
+.result-card.error {
+  background: #fff5f5;
+  border-left-color: #f44336;
+}
+
+.result-card a {
+  color: #667eea;
+  text-decoration: none;
+  margin-left: 0.5rem;
+}
+
+.result-card a:hover {
+  text-decoration: underline;
 }
 
 /* Responsive Design */

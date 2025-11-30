@@ -1,4 +1,4 @@
-import { PostContent, PlatformConfig, PlatformValidation, SocialPlatform } from '../types';
+import { PostContent, PlatformValidation, SocialPlatform } from '../types';
 import { PLATFORMS } from '../constants/platforms';
 
 export function validateContentForPlatform(
@@ -88,7 +88,6 @@ function splitIntoThreads(text: string, maxLength: number): string[] {
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
   
   let currentThread = '';
-  let threadNumber = 1;
 
   for (const sentence of sentences) {
     if ((currentThread + sentence).length <= maxLength - 20) {

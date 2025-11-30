@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { PostContent } from '../types';
 
 interface ContentEditorProps {
